@@ -1,0 +1,5 @@
+# Introdução
+
+O MEI foi criado em XXXXXX com objetivo de XXXXXX. Seu público alvo era XXXX. Depois de XXXX anos da sua criação, temos uma robusto conjunto de dados para definir o perfil dos participantes dessa modalidade de empreendimento.
+
+Esse trabalho busca responder a seguinte questão de pesquisa: Qual é o perfil do MEI, como é a sua distribuição por sexo, idade e escolaridade?

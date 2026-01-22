@@ -1,0 +1,13 @@
+name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+model|stem|90ae394a2e86538a|693e4c90d947b5eb|6b1c0d8cb3e6b67d|808688450||t20475.7197794392s|s108b|108|rds|local|vector|||0||
+file|stem|e231ea6fad3733eb|291b1607314d25b0|2c530c1562a7fbd1|1735323524|data/relatorio_mei cnae sexo1701.csv|t20475.637748404s|s27263b|27263|file|local|vector|||0||
+labels|stem|e241aa9e4dc60383|2e10710806d74254|21980739f088f5f6|860989556||t20475.7263679465s|s402b|402|rds|local|vector|||0.01||
+data1|stem|0948fb3814198db0|14c0abc3329ce191|e78b352cf77f16af|790192765||t20475.7269169419s|s10863b|10863|rds|local|vector|||0.12||
+data2|stem|84d03a216f4b8a1f|a68a2986061101a4|d0e1b35ff01ec0f7|-83915785||t20475.7317124329s|s10982b|10982|rds|local|vector|||0.01||
+data3|stem|209c356a24a367a5|c30e7abe9587b5d1|b9c723da57497804|1630877096||t20475.7330673414s|s11515b|11515|rds|local|vector|||0||
+rotular_secao_cnae|function|96a0d2f3f0b77b62
+get_data|function|feb4425509711a59
+associar_secao_cnae|function|677fe183c7cb2736
+write_data|function|3a4efa9a3e26cb64
+secoes|function|75f0da2a9115611a
+data|stem|209c356a24a367a5|62605a57c8c2ec44|97bb7cc8cebbe8d2|33550471||t20475.7391561851s|s11515b|11515|rds|local|vector|||0.11||

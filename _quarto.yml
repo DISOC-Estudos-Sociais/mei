@@ -1,0 +1,27 @@
+project:
+  type: book
+  output-dir: output
+
+book:
+  title: "Pefil do Microempreendedor Individual: uma revisão sistemática"
+  author: "Victor Batista"
+  date: "20/01/2026"
+  chapters:
+    - index.qmd
+    - intro.qmd
+    - methods.qmd
+    - summary.qmd
+    - references.qmd
+
+bibliography: references.bib
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+  pdf:
+    documentclass: scrreprt
+
+editor: visual
+
