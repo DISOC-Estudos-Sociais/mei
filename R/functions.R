@@ -96,10 +96,15 @@ rotular_secao_cnae <- function(df){
   )
   
   df |>
-    left_join(rotulo_secao, by = "secao")
+    left_join(rotulo_secao, by = "secao")|> 
+    group_by(nome_secao) |> 
+    summarise(total = sum(total, na.rm = TRUE),
+              total_masculino = sum(total_masculino, na.rm = TRUE),
+              total_feminino = sum(total_feminino, na.rm = TRUE))
 }
 
 write_data <- function(df){
   write_csv(df, "data/mei_secao.csv")
 }
-  
+
+
