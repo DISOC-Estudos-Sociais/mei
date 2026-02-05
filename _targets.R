@@ -5,6 +5,7 @@
 
 # Load packages required to define the pipeline:
 library(targets)
+library(PNADcIBGE)
 
 # library(tarchetypes) # Load other packages as needed.
 
@@ -56,5 +57,6 @@ list(
   tar_target(labels, secoes()),
   tar_target(data2, associar_secao_cnae(data1, codigo_cnae, labels)),
   tar_target(data3, rotular_secao_cnae(data2)),
-  tar_target(data, write_data(data3))
+  tar_target(raw_data_pnadc, get_data_pnadc()),
+  tar_target(clean_data_pnadc, filter_one_job(raw_data_pnadc))
 )
