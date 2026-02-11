@@ -1,62 +1,186 @@
-# Created by use_targets().
-# Follow the comments below to fill in this target script.
-# Then follow the manual to check and run the pipeline:
-#   https://books.ropensci.org/targets/walkthrough.html#inspect-the-pipeline
+# Pipeline de Análise de MEI no Ceará usando {targets}
+# 
+# Este script define o pipeline completo de análise usando o pacote targets
+# Para executar: targets::tar_make()
+# Para visualizar: targets::tar_visnetwork()
 
-# Load packages required to define the pipeline:
 library(targets)
-library(PNADcIBGE)
+library(tarchetypes)
 
-# library(tarchetypes) # Load other packages as needed.
+# Carregar funções customizadas
+source("R/funcoes_mei.R")
 
-# Set target options:
+# Configurações do pipeline
 tar_option_set(
-  packages = c("tibble", "targets", "tidyverse", "readxl") # Packages that your targets need for their tasks.
-  # format = "qs", # Optionally set the default storage format. qs is fast.
-  #
-  # Pipelines that take a long time to run may benefit from
-  # optional distributed computing. To use this capability
-  # in tar_make(), supply a {crew} controller
-  # as discussed at https://books.ropensci.org/targets/crew.html.
-  # Choose a controller that suits your needs. For example, the following
-  # sets a controller that scales up to a maximum of two workers
-  # which run as local R processes. Each worker launches when there is work
-  # to do and exits if 60 seconds pass with no tasks to run.
-  #
-  #   controller = crew::crew_controller_local(workers = 2, seconds_idle = 60)
-  #
-  # Alternatively, if you want workers to run on a high-performance computing
-  # cluster, select a controller from the {crew.cluster} package.
-  # For the cloud, see plugin packages like {crew.aws.batch}.
-  # The following example is a controller for Sun Grid Engine (SGE).
-  #
-  #   controller = crew.cluster::crew_controller_sge(
-  #     # Number of workers that the pipeline can scale up to:
-  #     workers = 10,
-  #     # It is recommended to set an idle time so workers can shut themselves
-  #     # down if they are not running tasks.
-  #     seconds_idle = 120,
-  #     # Many clusters install R as an environment module, and you can load it
-  #     # with the script_lines argument. To select a specific verison of R,
-  #     # you may need to include a version string, e.g. "module load R/4.3.2".
-  #     # Check with your system administrator if you are unsure.
-  #     script_lines = "module load R"
-  #   )
-  #
-  # Set other options as needed.
+  packages = c(
+    "PNADcIBGE",
+    "srvyr",
+    "dplyr",
+    "ggplot2",
+    "scales",
+    "stringr"
+  ),
+  format = "rds"
 )
 
-# Run the R scripts in the R/ folder with your custom functions:
-tar_source()
-# tar_source("other_functions.R") # Source other scripts as needed.
-
-# Replace the target list below with your own:
+# Pipeline
 list(
-  tar_target(file, "data/relatorio_mei cnae sexo1701.csv", format = "file"),
-  tar_target(data1, get_data(file)),
-  tar_target(labels, secoes()),
-  tar_target(data2, associar_secao_cnae(data1, codigo_cnae, labels)),
-  tar_target(data3, rotular_secao_cnae(data2)),
-  tar_target(raw_data_pnadc, get_data_pnadc()),
-  tar_target(clean_data_pnadc, filter_one_job(raw_data_pnadc))
+  
+  # 1. COLETA DE DADOS ------------------------------------------------------
+  
+  tar_target(
+    name = dados_brutos,
+    command = get_data_pnadc(),
+    format = "qs"  # Formato eficiente para objetos grandes
+  ),
+  
+  
+  # 2. PROCESSAMENTO --------------------------------------------------------
+  
+  tar_target(
+    name = dados_processados,
+    command = process_pnadc(dados_brutos),
+    format = "qs"
+  ),
+  
+  # 3. TABELAS DESCRITIVAS --------------------------------------------------
+  
+  tar_target(
+    name = tabela_numero_trabalhos,
+    command = calc_job_number(dados_processados)
+  ),
+  
+  tar_target(
+    name = tabela_contribuintes,
+    command = calc_contribuinte(dados_processados)
+  ),
+  
+  tar_target(
+    name = tabela_mei,
+    command = calc_tabela_mei(dados_processados)
+  ),
+  
+  
+  # 4. GRÁFICOS SOCIOECONÔMICOS ---------------------------------------------
+  
+  # Lista de variáveis socioeconômicas para análise
+  tar_target(
+    name = variaveis_socioeconomicas,
+    command = list(
+      list(var = "V1022", label = "Situação do Domicílio"),
+      list(var = "V1023", label = "Tipo de Área"),
+      list(var = "V2007", label = "Sexo"),
+      list(var = "V2010", label = "Cor ou Raça"),
+      list(var = "VD3004", label = "Nível de Instrução"),
+      list(var = "VD5009", label = "Faixa de Rendimento Domiciliar Per Capita")
+    )
+  ),
+  
+  # Gráfico: Situação do Domicílio (V1022)
+  tar_target(
+    name = grafico_situacao_domicilio,
+    command = create_socioeconomic_plot(
+      dados_processados, 
+      "V1022", 
+      "Situação do Domicílio"
+    )
+  ),
+  
+  # Gráfico: Tipo de Área (V1023)
+  tar_target(
+    name = grafico_tipo_area,
+    command = create_socioeconomic_plot(
+      dados_processados, 
+      "V1023", 
+      "Tipo de Área"
+    )
+  ),
+  
+  # Gráfico: Sexo (V2007)
+  tar_target(
+    name = grafico_sexo,
+    command = create_socioeconomic_plot(
+      dados_processados, 
+      "V2007", 
+      "Sexo"
+    )
+  ),
+  
+  # Gráfico: Cor ou Raça (V2010)
+  tar_target(
+    name = grafico_cor_raca,
+    command = create_socioeconomic_plot(
+      dados_processados, 
+      "V2010", 
+      "Cor ou Raça"
+    )
+  ),
+  
+  # Gráfico: Nível de Instrução (VD3004)
+  tar_target(
+    name = grafico_instrucao,
+    command = create_socioeconomic_plot(
+      dados_processados, 
+      "VD3004", 
+      "Nível de Instrução"
+    )
+  ),
+  
+  # Gráfico: Rendimento (VD5009)
+  tar_target(
+    name = grafico_rendimento,
+    command = create_socioeconomic_plot(
+      dados_processados, 
+      "VD5009", 
+      "Faixa de Rendimento Domiciliar Per Capita"
+    )
+  ),
+  
+  
+  # 5. SALVAR OUTPUTS -------------------------------------------------------
+  
+  tar_target(
+    name = salvar_tabela_mei,
+    command = {
+      readr::write_csv2(tabela_mei, "outputs/tabela_mei.csv")
+      tabela_mei
+    }
+  ),
+  
+  tar_target(
+    name = salvar_graficos,
+    command = {
+      ggplot2::ggsave(
+        "outputs/grafico_situacao_domicilio.png", 
+        grafico_situacao_domicilio,
+        width = 10, height = 6, dpi = 300
+      )
+      ggplot2::ggsave(
+        "outputs/grafico_tipo_area.png", 
+        grafico_tipo_area,
+        width = 10, height = 6, dpi = 300
+      )
+      ggplot2::ggsave(
+        "outputs/grafico_sexo.png", 
+        grafico_sexo,
+        width = 10, height = 6, dpi = 300
+      )
+      ggplot2::ggsave(
+        "outputs/grafico_cor_raca.png", 
+        grafico_cor_raca,
+        width = 10, height = 6, dpi = 300
+      )
+      ggplot2::ggsave(
+        "outputs/grafico_instrucao.png", 
+        grafico_instrucao,
+        width = 10, height = 6, dpi = 300
+      )
+      ggplot2::ggsave(
+        "outputs/grafico_rendimento.png", 
+        grafico_rendimento,
+        width = 10, height = 6, dpi = 300
+      )
+      "Gráficos salvos com sucesso!"
+    }
+  )
 )

@@ -142,6 +142,7 @@ write_data <- function(df){
 # 
 # "VD4002" - condição de ocupação na semana de referência para pessoas de 14 anos ou mais de idade
 # "VD4007" - posição na ocupação no trabalho principal da semana de referência para pessoas de 14 anos ou mais de idade
+# "VD4009" - posição na ocupação e categoria do emprego do trabalho principal da semana de referência para pessoas de 14 anos ou mais de idade
 # "VD4010" - grupamentos de atividade principal do empreendimento do trabalho principal da semana de referência para pessoas de 14 anos ou mais de idade
 # "VD4011" - grupamentos ocupacionais do trabalho principal da semana de referência para pessoas de 14 anos ou mais de idade
 # "VD4012" - contribuição para instituto de previdência em qualquer trabalho da semana de referência para pessoas de 14 anos ou mais de idade
@@ -151,7 +152,8 @@ write_data <- function(df){
 # "VD4017" - rendimento mensal EFETIVO do trabalho PRINCIPAL para pessoas de 14 anos ou mais de idade (apenas para pessoas que receberam em dinheiro, produtos ou mercadorias no trabalho principal)
 # "VD4019" - rendimento mensal HABITUAL de TODOS os trabalhos para pessoas de 14 anos ou mais de idade (apenas para pessoas que receberam em dinheiro, produtos ou mercadorias em qualquer trabalho)
 # "VD4020" - rendimento mensal EFETIVO de TODOS os trabalhos para pessoas de 14 anos ou mais de idade (apenas para pessoas que receberam em dinheiro, produtos ou mercadorias em qualquer trabalho)
-
+# "VD5003" - faixa de rendimento (efetivo) domiciliar per capita (exclusive rendimentos em cartão/tíquete transporte ou alimentação) (exclusive o rendimento das pessoas cuja condição na unidade domiciliar era pensionista, empregado doméstico ou parente do empregado doméstico)
+# "VD5009" - faixa de rendimento domiciliar per capita (habitual de todos os trabalhos e efetivo de outras fontes) (exclusive o rendimento das pessoas cuja condição na unidade domiciliar era pensionista, empregado doméstico ou parente do empregado doméstico)
 
 
 get_data_pnadc <- function(){
@@ -162,7 +164,7 @@ get_data_pnadc <- function(){
                                 "V405012", "V405112", "V5002A", "V5002A2", "V5005A", "V5005A2",
                                 "VD2002", "VD2006", "VD3004", "VD4002", "VD4007", "VD4010",
                                 "VD4011", "VD4012", "VD4013", "VD4014", "VD4016", "VD4017",
-                                "VD4019", "VD4020"),
+                                "VD4019", "VD4020", "VD5003", "VD5009", "VD4009"),
                        interview =  1,
                        design = TRUE,
                        deflator = TRUE)
@@ -176,7 +178,16 @@ process_pnadc <- function(design){
     srvyr::mutate(VD4016_real = VD4016*CO1,
                   VD4017_real = VD4017*CO1e,
                   VD4019_real = VD4019*CO1,
-                  VD4020_real = VD4020*CO1e)
+                  VD4020_real = VD4020*CO1e)|>
+    srvyr::mutate(mei = dplyr::case_when(
+      VD4009 == "Conta-própria" & V4019 == "Sim" & VD4012 == "Contribuinte" ~ "Conta própria com CNPJ e contribuição social (MEI)",
+      VD4009 == "Conta-própria" ~ "Conta própria",
+      VD4009 == "Empregado no setor privado sem carteira de trabalho assinada" ~ "Empregado sem carteira",
+      .default = "Outros")) |> 
+    srvyr::mutate(V2010 = case_when(
+      V2010 == "Branca" ~ "Branca",
+      TRUE ~ "Outras"
+      ))
 }
 
 # 85.000 (2,3%) de oessoas ocupadas possuem mais de um trabalho. Dessas, somente 3.852 (4,6%) possuem cnpj.
@@ -206,18 +217,55 @@ coount <- function(design, variable){
     srvyr::summarize(total = srvyr::survey_total(), proportion = srvyr::survey_prop())
 }
 
-# clean_data_pnadc |>
-#   srvyr::mutate(mei = dplyr::case_when(
-#     VD4007 == "Conta própria" & V4019 == "Sim"))
+plot_proporcao_mei <- function(design){
+  design |> 
+    srvyr::group_by(Ano, mei) |>
+    srvyr::summarize(total = srvyr::survey_total(), proportion = srvyr::survey_prop()) |> 
+    ggplot(aes(Ano, proportion, fill = mei))+
+    geom_col(position = "stack")+
+    geom_text(
+      aes(label = scales::percent(proportion, accuracy = 0.1)), 
+      vjust = 0, 
+      position = position_stack(vjust = 0.5),
+      size = 3.25,
+      color ="white",
+      fontface = "bold"
+    )
+}
 
-# coount(clean_data_pnadc, V4019)
-# coount(clean_data_pnadc, VD4007)
-# coount(clean_data_pnadc, VD4012)
+plt_mei_socioecon <- function(design, variable){
+  design |> 
+    srvyr::group_by(mei, {{variable}}) |>
+    srvyr::summarize(total = srvyr::survey_total(), proportion = srvyr::survey_prop()) |> 
+    ggplot2::ggplot(ggplot2::aes(mei, proportion, fill = {{variable}}))+
+    ggplot2::geom_col(position = "stack")+
+    ggplot2::scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15))+
+    ggplot2::scale_color_discrete(labels = function(x) stringr::str_wrap(x, width = 15))+
+    ggplot2::geom_text(
+      ggplot2::aes(label = scales::percent(proportion, accuracy = 0.1)),
+      position = ggplot2::position_stack(vjust = 0.5))
+}
+
+
+# clean_data_pnadc |> 
+#   srvyr::group_by(Ano, mei) |>
+#   srvyr::summarize(total = srvyr::survey_total(), proportion = srvyr::survey_prop()) |> 
+#   ggplot2::ggplot(ggplot2::aes(Ano, proportion, fill = mei))+
+#   ggplot2::geom_col(position = "stack")+
+#   ggplot2::scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15))+
+#   ggplot2::scale_color_discrete(labels = function(x) stringr::str_wrap(x, width = 15))+
+#   ggplot2::geom_text(
+#     ggplot2::aes(label = scales::percent(proportion, accuracy = 0.1)),
+#     position = ggplot2::position_stack(vjust = 0.5))
 # 
 # 
 # 
 # 
-# coount(clean_data_pnadc, V1022)
-# coount(clean_data_pnadc, V1023)
-# coount(clean_data_pnadc, V2007)
-# coount(clean_data_pnadc, V2010)
+# 
+# plt_mei_socioecon(clean_data_pnadc, V1022)
+# plt_mei_socioecon(clean_data_pnadc, V1023)
+# plt_mei_socioecon(clean_data_pnadc, V2007)
+# plt_mei_socioecon(clean_data_pnadc, V2010)
+# plt_mei_socioecon(clean_data_pnadc, VD3004)
+# plt_mei_socioecon(clean_data_pnadc, VD5003)
+# plt_mei_socioecon(clean_data_pnadc, VD5009)
